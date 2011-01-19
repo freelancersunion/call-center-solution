@@ -1,0 +1,218 @@
+<html>
+	<head>
+ 		<script src="static/jquery-1.4.4.min.js"></script>
+  		<script src="static/jquery.phono.js"></script>
+	</head>
+	<body>
+	<!-- BEGIN phono script -->
+	<script>
+	$(document).ready(function() {
+						var phono, call, sessionID;
+						
+						function createClient() {
+							
+						
+							phono = $.phono({
+										apiKey: "{{ PHONO_API_KEY }}",
+										onReady: function(event) {
+											$("#phone_status").html("<font color='green'>Phono is ready. SIP: " + this.sessionId + "</font>");
+											$("#display").val("");
+											sessionID = this.sessionId;
+											console.log("Phono is ready. SIP: " + this.sessionId);
+											//register agent for service
+											$.ajax({
+												type: "POST",
+												url: "/register_agent",
+												data: "agentANI=" + sessionID,
+												success: function(){
+															$("#phone_status").html("<font color='green'>Agent Registered for service. SIP: " + sessionID + "</font>");
+												   		}
+											});
+										},
+										onUnready: function() {
+											$("#phone_status").html("Phono is not ready!");
+										},
+										onError: function(event) {
+											$("#phone_status").html("<font color='red'>ERROR: " + event.reason + "</font>");
+										},
+										//Phone API Configuration
+										phone: {
+											rintTone:"{{ RINGTONE }}",
+											//Event Handlers
+											onIncomingCall: function(event) {
+												
+												//update UI
+												$("#caller_id").html("<font color='green'>" + event.call.id + "</font>");
+												
+												//bind events from this call
+												call = event.call;
+												call.pushToTalk(true);
+												call.mute(false);
+												call.talking(true);
+												
+												Phono.events.bind(call, {
+														onRing: function(event) {
+															$("#call_status").html("Incoming Call");
+														},
+														onHangup: function(event) {
+															$("#call_status").html("Call hungup");
+															$("#caller_id").html("");
+															$("#display").val("");
+														},
+														onError: function(event) {
+															$("#call_status").html("<font color='red'>ERROR: " + event.reason + "</font>");
+														},
+														onAnswer: function(event) {
+															$("#call_status").html("<font color='green'>Call Answered</font>");
+															$("#display").val("");
+														}
+													});
+											},
+											onError: function(event) {
+												$("#phone_status").html("<font color='red'>ERROR: " + event.reason + "</font>");					
+											}
+										}//end phone					
+							});//end phono
+						}//end function
+						
+						//DOM Event Handlers
+						$('#answer').live('click', function() {
+							console.log("trying to answer call");
+							call.answer();
+						});
+						$('#hangup').live('click', function() {
+							call.hangup();
+						});
+						$('#hold').live('click', function() {
+							console.log("Call.hold: " + $("#hold").val());
+							if ($("#hold").val()=='OnHold') {
+								call.hold(false);
+								$("#call_status").html("<font color='green'>Call Answered</font>");
+								$("#hold").val('Hold');
+							}else {
+							    call.hold(true);
+							    $("#call_status").html("<font color='blue'>Call on Hold</font>");
+							    $("#hold").val('OnHold');
+							}
+						});	
+						$('#digit_1').live('click', function() {
+							call.digit("1");
+							$("#display").val($("#display").val() + "1");
+						});
+						$('#digit_2').live('click', function() {
+							call.digit("2");
+							$("#display").val($("#display").val() + "2");
+						});		
+						$('#digit_3').live('click', function() {
+							call.digit("3");
+							$("#display").val($("#display").val() + "3");
+						});			
+						$('#digit_4').live('click', function() {
+							call.digit("4");
+							$("#display").val($("#display").val() + "4");
+						});	
+						$('#digit_5').live('click', function() {
+							call.digit("5");
+							$("#display").val($("#display").val() + "5");
+						});	
+						$('#digit_6').live('click', function() {
+							call.digit("6");
+							$("#display").val($("#display").val() + "6");
+						});	
+						$('#digit_7').live('click', function() {
+							call.digit("7");
+							$("#display").val($("#display").val() + "7");
+						});
+						$('#digit_8').live('click', function() {
+							call.digit("8");
+							$("#display").val($("#display").val() + "8");
+						});		
+						$('#digit_9').live('click', function() {
+							call.digit("9");
+							$("#display").val($("#display").val() + "9");
+						});	
+						$('#digit_0').live('click', function() {
+							call.digit("0");
+							$("#display").val($("#display").val() + "0");
+						});	
+						$('#digit_star').live('click', function() {
+							call.digit("*");
+							$("#display").val($("#display").val() + "*");
+						});	
+						$('#digit_pound').live('click', function() {
+							call.digit("#");
+							$("#display").val($("#display").val() + "#");
+						});	
+						$('#unregisterAgent').live('click', function() {
+							//unregister agent for service
+							$.ajax({
+								type: "POST",
+								url: "/unregister_agent",
+								data: "agentANI=" + sessionID,
+								success: function(response){
+									if (response=='unregistration.successful'){
+										$("#phone_status").html("<font color='black'>Agent successfully unregistered for service with #: " + sessionID + "</font>");
+									}else if (response=='unregistration.unsuccessful'){
+										$("#phone_status").html("<font color='red'>Agent did NOT successfully unregister for service with #:" + sessionID + "</font>");
+									}else {
+										$("#phone_status").html("<font color='red'>Unrecognized response: " + response + "</font>");						
+									}
+								}
+							});
+							
+						});	
+						
+						//Create client 
+						createClient();
+			});//end ready
+	</script>
+	
+	<!-- END phono script -->
+	
+	<!-- Phone status -->
+	<B>Phone Status: </B><span id="phone_status"></span>
+	<br>	
+	<!-- Caller ID -->
+	<B>Caller ID: </B><span id="caller_id"></span>
+	<br>
+	<B>Call Status: </B><span id="call_status"></span>
+	<br>
+	<!-- BEGIN telephone keypad -->
+	<table border="0" cellpadding="0" cellspacing="0">
+	<tr>
+		<td><input type="button" id="answer" value="Answer Call" /></td>
+		<td><input type="button" id="hangup" value="Hangup" /></td>
+		<td><input type="button" id="hold" value="Hold" /></td>
+		<td><input type="button" id="unregisterAgent" value="End Agent Shift" /></td>
+	</tr>
+	</table>
+	<br>
+	<table border="0" cellpadding="0" cellspacing="0">
+	<tr>
+		<td colspan="7"><input type="text" id="display" STYLE="color: #FFFFFF; font-family: Verdana; font-weight: bold; font-size: 12px; background-color: #333333;" size="20" maxlength="30" value="" />
+	</tr>
+	<tr>
+		<td><input type="button" id="digit_1" value="1" /></td>
+		<td><input type="button" id="digit_2" value="2" /></td>
+		<td><input type="button" id="digit_3" value="3" /></td>
+	</tr>
+	<tr>
+		<td><input type="button" id="digit_4" value="4" /></td>
+		<td><input type="button" id="digit_5" value="5" /></td>
+		<td><input type="button" id="digit_6" value="6" /></td>
+	</tr>
+	<tr>
+		<td><input type="button" id="digit_7" value="7" /></td>
+		<td><input type="button" id="digit_8" value="8" /></td>
+		<td><input type="button" id="digit_9" value="9" /></td>
+	</tr>
+	<tr>
+		<td><input type="button" id="digit_star" value="*" /></td>
+		<td><input type="button" id="digit_0" value="0" /></td>
+		<td><input type="button" id="digit_pound" value="#" /></td>
+	</tr>
+	</table>
+	
+	<!-- END telephone keypad -->
+	</body>
+</html>

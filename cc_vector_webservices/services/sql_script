@@ -1,0 +1,16 @@
+CREATE TABLE agents(
+	agent_id SERIAL PRIMARY KEY,
+	ani text NOT NULL,
+	connection_status integer NOT NULL,
+	phone_status integer NOT NULL,
+	added timestamp DEFAULT current_timestamp NOT NULL
+);
+CREATE INDEX ani_idx ON agents(ani);
+
+CREATE TABLE call_history(
+	call_id SERIAL PRIMARY KEY,
+	call_start timestamp DEFAULT current_timestamp NOT NULL,
+	call_end timestamp NOT NULL,
+	agent_id integer references agents(agent_id)
+);
+ALTER TABLE call_history ALTER COLUMN call_end DROP NOT NULL;

@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ccxml version="1.0" xmlns="http://www.w3.org/2002/09/ccxml">
+
+<meta name="author" content="Vikash Dat"/> 
+<meta name="copyright" content="2010 Freelancers Union"/> 
+<meta name="description" content="This CCXML 1.0 application implements the FreeLancers Union Member Services call center."/> 
+<meta name="maintainer" content="vdat@luka.workingtoday.org"/>
+
+<!-- *********************************************** -->
+<!-- This script generated a unique ID for the       -->
+<!-- session to prevent hijacking.					 -->
+<!-- *********************************************** -->
+
+<script>
+	<![CDATA[
+	  function generateUniqueID() {
+			var chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz";
+			var string_length = 16;
+			var randomstring = '';
+			for (var i=0; i<string_length; i++) {
+				var rnum = Math.floor(Math.random() * chars.length);
+				randomstring += chars.substring(rnum,rnum+1);
+			}
+			return randomstring;
+		}
+		]]>
+</script>
+
+<!-- *********************************************** -->
+<!-- This script allows for profiling of send        -->
+<!-- elements.										 -->
+<!-- *********************************************** -->
+<script>
+	  <![CDATA[
+	  function get_time()
+	    {
+	      var d = new Date();
+	      return d.getTime();
+        }
+       ]]>
+</script>
+
+<!-- *********************************************** -->
+<!-- This script allows is needed to reformat SIP    -->
+<!-- addresses to work on Voxeo's network.			 -->
+<!-- *********************************************** -->
+
+<script>
+	  <![CDATA[
+		function formatSIPAddress(SIPANI)
+		{
+			//replaces the @ sign with !
+			locationOfATSign = SIPANI.search("@");
+			newSIP = SIPANI.substring(0,locationOfATSign);
+			newSIP += "!" ;
+			newSIP += SIPANI.substring(locationOfATSign+1,SIPANI.length);
+			return newSIP + "@sbc-staging-internal.orl.voxeo.net";		
+		}
+       ]]>
+</script>
+
+<!-- *********************************************** -->
+<!-- This script does a quick check against generated-->
+<!-- unique ID's.									 -->
+<!-- *********************************************** -->
+
+<script>
+	  <![CDATA[
+	  function isUniqueIDCorrect(generatedUID, recievedUID)
+	    {
+	      if (generatedUID == recievedUID)
+	      {
+	      	return 1;
+	      }else{
+	      	return 0;
+	      }
+	    }
+       ]]>
+</script>
+
+<!-- *********************************************** -->
+<!-- Needed headers for SIP calls.					 -->
+<!-- *********************************************** -->
+
+<script> 
+	var hints=new Object(); 
+	hints.headers=new Object(); 
+	hints.headers['x-vdirect']='true'; 
+</script> 
+
+<!--  *****************************************  -->
+<!--  Document Scoped Variables Declaration      -->
+<!--  *****************************************  -->
+
+<var name="varcurrState" expr="'INITIAL'"/>
+<var name="currentSessionID"/>
+<var name="uniqueIdentifier" expr="generateUniqueID()"/>
+<var name="WEBSERVICE_URL" expr="''"/>
+<var name="connectionID" />
+<var name="HoldMusicDialog" />
+<var name="CallerID" />
+<var name="OutBoundConnID"/>
+<var name="IVRCallID"/>
+<var name="VOURL" expr="'call_center_hold_music.vxml'"/>
+
+
+<eventprocessor statevariable="varcurrState">
+	
+	<transition event="connection.alerting" state="INITIAL">
+		<!-- assign sessionID -->
+		<log expr="'sessionid: ' + session.id" />
+		<log expr="'callerid: ' + event$.connection.remote"/>
+		<assign name="CallerID" expr="event$.connection.remote"/>
+		<assign name="connectionID" expr="event$.connectionid"/>
+		<assign name="currentSessionID" expr="session.id"/>
+		<log expr="'Callers session ID: ' + currentSessionID "/>
+		<log expr="'Before send: ' + get_time() "/>
+		<send name="'http.post'" namelist="currentSessionID uniqueIdentifier" target="WEBSERVICE_URL + 'incoming_connection'" targettype="'basichttp'"/>
+		<log expr="'After send: ' + get_time() "/>
+	</transition>
+
+	<!-- TODO: Add logic to handle an unsucessful send event -->
+	
+	<transition event="send.successful" state="INITIAL">
+		<accept connectionid="connectionID" />
+		<assign name="varcurrState" expr="'CONNECTED'" />		
+	</transition>
+	
+	<transition event="hold.noprompt" state="CONNECTED">
+		<!--place caller on hold -->
+		<assign name="varcurrState" expr="'HOLD_MUSIC'"/>
+		<dialogstart src="VOURL" dialogid="HoldMusicDialog" connectionid="connectionID" type="'application/voicexml+xml'" />
+	</transition>
+	
+	<!-- TODO: add logic for http event injection which should do a blind join -->
+	<transition event="agent.retrieved" state="HOLD_MUSIC">
+		<!-- agent ani return, make outbound call to agent, then join legs -->
+		<!-- check uid -->
+		<log expr="'Http event injected: agent.retrieved'"/>
+		<log expr="'agent ANI:' + event$.availableAgentANI"/>
+		<log expr="'SENT UID:' + event$.sentUID"/>
+		<log expr="'IVR CALL ID: ' + event$.callId"/>
+		<log expr="'DESTINATION TYPE: ' + event$.destinationType"/>
+		<assign name="IVRCallID" expr="event$.callId"/>
+		<if cond="isUniqueIDCorrect(uniqueIdentifier,event$.sentUID)">
+			<assign name="varcurrState" expr="'CONNECTING_TO_AGENT'"/>
+			<if cond="event$.destinationType=='SIP'">
+				<!-- Create call to sip destination -->
+				<log expr="'formatSIPAddress : ' + formatSIPAddress(event$.availableAgentANI)"/>
+				<createcall dest="'sip:' + formatSIPAddress(event$.availableAgentANI)" hints="hints" callerid="'tel:1' + CallerID" timeout="'90s'"/>	
+			<elseif cond="event$.destinationType=='TEL'"/>
+				<createcall dest="'tel:1' + event$.availableAgentANI " callerid="'tel:1' + CallerID" timeout="'90s'"/>
+			<else/>
+				<log expr="'Destination type not understood' + event$.destinationType"/>
+				<!-- put logic to handle this for the caller -->
+			</if>			
+		</if>
+	</transition>
+	
+	<!--  *****************************************  -->
+	<!--  agent connection fails                     -->
+	<!--  *****************************************  -->
+	<transition state="CONNECTING_TO_AGENT" event="connection.failed">
+		<log expr="'Failed to connect to agent'"/>
+		<send name="'http.post'" namelist="IVRCallID" target="WEBSERVICE_URL + 'end_connection'" targettype="'basichttp'"/>	
+	</transition>
+	
+	<transition state="CONNECTING_TO_AGENT" event="connection.connected" >
+		<assign name="varcurrState" expr="'AGENT_CONNECTED'"/>
+		<assign name="OutBoundConnID" expr="event$.connectionid"/>
+		<dialogterminate dialogid="HoldMusicDialog" immediate="'true'" />		
+	</transition>
+	
+	<transition state="AGENT_CONNECTED" event="dialog.exit">
+		<join id1="connectionID" id2="OutBoundConnID" duplex="'full'" entertone="'false'" exittone="'false'"/>
+	</transition>
+	
+	<!-- TODO: add logic for hangup, update agent phone status in db -->
+	<transition event="connection.disconnected" state="AGENT_CONNECTED">
+		<send name="'http.post'" namelist="IVRCallID" target="WEBSERVICE_URL + 'end_connection'" targettype="'basichttp'"/>		
+	</transition>
+	
+	<!-- post logic for end_connection -->
+	<transition event="call_end.successful">
+		<log expr="'Call ended successfully"/>
+		<exit/> 
+	</transition>
+	
+	<transition event="call_end.unsuccessful">
+		<log expr="'Call ended unsuccessfully"/>
+		<exit/> 
+	</transition>
+</eventprocessor>
+
+</ccxml>

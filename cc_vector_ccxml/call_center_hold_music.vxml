@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<vxml version="2.1">
+<meta name="maintainer" content="vdat@luka.workingtoday.org"/>
+
+<form>
+    <block>
+		<prompt>
+				<!-- Place hold music audio -->
+				<!-- <audio src=""/> -->
+		</prompt>
+	</block>
+</form>
+
+</vxml>

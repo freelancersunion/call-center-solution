@@ -1,0 +1,103 @@
+<html>
+<head>
+	<title>Phone client</title>
+	<script src="static/jquery-1.4.4.min.js"></script>
+<script type="text/javascript">
+
+function unregisterPhone()
+{
+	phoneNumber = document.getElementById('phone_number_input').value;
+	phoneNumber = phoneNumber.replace(/[\(\)\.\-\ ]/g, '');
+	console.log("in registerPhone, phoneNumber: " + phoneNumber);
+	//unregisters an agent for service
+	$.ajax({
+				type: "POST",
+				url: "/unregister_agent",
+				data: "agentANI=" + phoneNumber,
+				success: function(response){
+						if (response=='unregistration.successful'){
+							$("#phone_status").html("<font color='black'>Agent successfully unregistered for service with #: " + phoneNumber + "</font>");
+						}else if (response=='unregistration.unsuccessful'){
+							$("#phone_status").html("<font color='red'>Agent did NOT successfully unregister for service with #:" + phoneNumber + "</font>");
+						}else {
+							$("#phone_status").html("<font color='red'>Unrecognized response: " + response + "</font>");						
+						}
+		  		}
+		});
+
+
+}
+
+function registerPhone()
+{
+	phoneNumber = document.getElementById('phone_number_input').value;
+	//registers agent for service
+	console.log("in registerPhone");
+	//validate phone number
+	if(validatePhone(phoneNumber))
+	{
+		//get striped number
+		phoneNumber = phoneNumber.replace(/[\(\)\.\-\ ]/g, '');
+		//register phone number for service
+		$.ajax({
+				type: "POST",
+				url: "/register_agent",
+				data: "agentANI=" + phoneNumber,
+				success: function(response){
+						if (response=='registration.agent_already_active'){
+							$("#phone_status").html("<font color='red'>Agent already registered for service with number: " + phoneNumber + "</font>");
+						}else if (response=='registration.successful'){
+							$("#phone_status").html("<font color='green'>Agent Registered for service. Phone #: " + phoneNumber + "</font>");
+						}else {
+							$("#phone_status").html("<font color='red'>Unrecognized response: " + response + "</font>");						
+						}
+		  		}
+		});
+	}
+
+}
+
+function validatePhone(phoneNumber) {
+    var error = "";
+    var strippedNumber = phoneNumber.replace(/[\(\)\.\-\ ]/g, '');     
+	console.log("in validatePhone phoneNumber: "+ phoneNumber);
+	console.log("in validatePhone stripped: "+ strippedNumber);
+   if (phoneNumber == "") {
+        error = "You didn't enter a phone number.\n";
+        
+    } else if (isNaN(parseInt(strippedNumber))) {
+        error = "The phone number contains illegal characters.\n";
+        
+    } else if (!(strippedNumber.length == 10)) {
+        error = "The phone number is the wrong length. Make sure you included an area code.\n";
+    }
+    if (error.length > 0)
+    { 
+    	$("#phone_status").html("<font color='red'>ERROR: " + error + "</font>");
+    	return false;
+    }else{
+    	return strippedNumber;    
+    }
+}
+</script>
+	
+</head>
+<body>
+	<h1>Agent Registration</h1>
+	<h2>Please enter the phone number you'd like to register for service with</h2>
+	<B>Phone Status: </B><span id="phone_status"></span>
+	<table>
+		<tr>
+		<td><label for="agent_phone_number">Enter phone number for agent:</label> </td>
+		<td><input type="text" cols="10" id="phone_number_input"/></td>
+		</tr>
+		<tr>
+			<td></td>
+			<td><input type="button" value="Register" onclick="registerPhone()"/></td>
+			<td><input type="button" value="Unregister" onclick="unregisterPhone()"/></td>
+		</tr>
+	</table>
+</body>
+
+
+</html>
