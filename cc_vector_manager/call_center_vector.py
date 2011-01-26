@@ -216,7 +216,7 @@ class CallCenterVectorManager(object):
         ccxmlUniqueID = loadedMessage['id']              
         
         #get available agents
-        #returns list of {'agent':<Agent Instance>, 'idle':integer}  *idle is measured in seconds
+        #returns <Agent Instance>
         agents = self.agentGateway.getAvailableAgentsByIdleTime()
         
         #use our selected UCD_MIA algorithm to select the next agent

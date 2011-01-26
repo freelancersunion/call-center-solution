@@ -2,7 +2,7 @@ CALL CENTER DISASTER RECOVERY SOLUTION
 
 ======================================
 
-The call center disaster recovery solution provides ccxml portal, MQ producer/consumer, and webservices to manage call handling and agent selection. The ccxml portal can be loaded into an existing phone tree by creating an application in Voxeo's cloud, and issuing a <createcall> to the assigned number.
+The call center disaster recovery solution provides ccxml portal, MQ producer/consumer, and webservices to manage call handling and agent selection. The ccxml portal can be loaded into an existing phone tree by creating an application in Voxeo's cloud, and issuing a <createcall> to the assigned number. A demo of the application can be see here: http://www.youtube.com/watch?v=lMN04Gucnck.
 
 DEPENDENCIES
 	
@@ -21,11 +21,11 @@ Rabbit MQ
 
 INSTALL
 
-The python libs can be installed using setuptools: python setup.py install . This will install django and ampqlib for Rabbit MQ. This currently creates dist/ and egg/ folders which aren't needed and be removed.
+The python libs can be installed using setuptools: python setup.py install . This will install django and ampqlib for Rabbit MQ. This currently creates dist/ and egg/ folders which aren't needed and can be removed.
 
 Rabbit MQ can be installed following the instructions here:  http://www.rabbitmq.com/install.html.
 
-To create the ccxml portal, upload the files in cc_vector_ccxml/ to Voxeo's cloud and create and application that points to 'call_center_ivr.ccxml'. The number assigned from Voxeo can be used to call the application.
+To create the ccxml portal, upload the files in cc_vector_ccxml/ to Voxeo's cloud and create an application that points to 'call_center_ivr.ccxml'. The number assigned from Voxeo can be used to call the application.
 
 Run the sql_scripts found in cc_vector_webservices/services/. This will create the agents and call_history tables.
 

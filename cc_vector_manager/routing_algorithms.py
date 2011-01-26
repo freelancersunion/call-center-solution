@@ -7,7 +7,7 @@ log = logging.getLogger('cc_vector_webservices')
 class UCD_MIA_Alogrithm(object):
      
     def getNextAgent(self, agents):
-        """ Returns the agent with the most idle time """
+        """ Returns the agent with the most idle time. Idle time in seconds. """
         try:            
             #sort agents based on idle time
             agentWithMostIdleTime = sorted(agents, key=itemgetter('idle'),reverse=True)[0]

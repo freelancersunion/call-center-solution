@@ -132,7 +132,7 @@
 		<dialogstart src="VOURL" dialogid="HoldMusicDialog" connectionid="connectionID" type="'application/voicexml+xml'" />
 	</transition>
 	
-	<!-- TODO: add logic for http event injection which should do a blind join -->
+	<!-- logic for http event injection which should do a blind join -->
 	<transition event="agent.retrieved" state="HOLD_MUSIC">
 		<!-- agent ani return, make outbound call to agent, then join legs -->
 		<!-- check uid -->
@@ -175,7 +175,7 @@
 		<join id1="connectionID" id2="OutBoundConnID" duplex="'full'" entertone="'false'" exittone="'false'"/>
 	</transition>
 	
-	<!-- TODO: add logic for hangup, update agent phone status in db -->
+	<!-- logic for hangup, update agent phone status in db -->
 	<transition event="connection.disconnected" state="AGENT_CONNECTED">
 		<send name="'http.post'" namelist="IVRCallID" target="WEBSERVICE_URL + 'end_connection'" targettype="'basichttp'"/>		
 	</transition>
